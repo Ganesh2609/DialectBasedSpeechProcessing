@@ -1,0 +1,99 @@
+# ============================================================
+# Python
+# ============================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+*.so
+
+# ============================================================
+# IDE / Editor
+# ============================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ============================================================
+# Model Checkpoints (large .pth files)
+# ============================================================
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+
+# ============================================================
+# Audio Files
+# ============================================================
+*.wav
+*.mp3
+*.flac
+*.ogg
+*.m4a
+
+# ============================================================
+# Large Data Files
+# ============================================================
+*.npz
+*.pkl
+*.h5
+*.hdf5
+
+# ============================================================
+# Raw / Intermediate Dataset Folders (contain audio)
+# ============================================================
+1 Dataset/
+4 Final Dataset/Test
+4 Final Dataset/Train/Central_Dialect
+4 Final Dataset/Train/Northern_Dialect
+4 Final Dataset/Train/Southern_Dialect
+4 Final Dataset/Train/Western_Dialect
+
+# ============================================================
+# Paper / LaTeX Files (kept separately)
+# ============================================================
+sample-sigconf-authordraft.tex
+references.bib
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
+# ============================================================
+# Scratch / Trial Notebooks
+# ============================================================
+trial.ipynb
+3 Preprocessing/trial.ipynb
+
+# ============================================================
+# Docs (project documentation, not needed in repo)
+# ============================================================
+8 Docs/
+
+# ============================================================
+# Misc
+# ============================================================
+*.zip
+*.tar.gz
+*.rar
+
+# ============================================================
+# Others
+# ============================================================
+prompt.txt
+train_data.txt
+transcriptions_comparison_1.csv
+Classification_perfect.txt
+classification_result_prediction.txt
+submission_data.txt
