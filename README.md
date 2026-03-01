@@ -105,8 +105,6 @@ DialectSpeechProcessing/
 │   ├── 📄 Wise_Recognition_Run1-2.txt
 │   └── 📄 submission_data.txt
 │
-├── 8 Docs/                                     # Project documentation
-│
 ├── .gitignore
 ├── requirements.txt
 └── 📖 README.md
