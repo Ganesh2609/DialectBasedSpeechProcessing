@@ -1,4 +1,5 @@
-# Wise@DravidianLangTech 2026: Dialect-Aware Tamil Speech Processing via Wav2Vec2 Attentive Pooling and Whisper Fine-Tuning 🎯
+# Wise@DravidianLangTech 2026: Cross-Pipeline Dialect Embedding
+Transfer for Tamil Speech Classification and Recognition 🎯
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-red.svg)](https://pytorch.org/)
