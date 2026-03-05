@@ -1,5 +1,4 @@
-# Wise@DravidianLangTech 2026: Cross-Pipeline Dialect Embedding
-Transfer for Tamil Speech Classification and Recognition 🎯
+# Wise@DravidianLangTech 2026: Cross-Pipeline Dialect Embedding Transfer for Tamil Speech Classification and Recognition 🎯
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-red.svg)](https://pytorch.org/)
