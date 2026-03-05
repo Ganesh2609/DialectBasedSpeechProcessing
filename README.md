@@ -283,10 +283,9 @@ Test set: 2.05 hours of unlabeled audio.
 ## 👥 Authors
 
 1. **Ganesh Sundhar S**
-2. **Vishal AS**
-3. **Durai Singh K**
-4. **Gnanasabesan G**
-5. **Suriya KP**
+2. **Hari Krishnan N**
+3. **Gnanasabesan G**
+4. **Suriya KP**
 
 **Affiliation**: Amrita School of Artificial Intelligence, Coimbatore, Amrita Vishwa Vidyapeetham, India
 
