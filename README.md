@@ -1,50 +1,156 @@
-# Wise@DravidianLangTech 2026: Cross-Pipeline Dialect Embedding Transfer for Tamil Speech Classification and Recognition 🎯
+# Wise@DravidianLangTech 2026: Dialect-Aware Tamil Speech Classification and Recognition via Cross-Pipeline Embedding Transfer 🎯
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-red.svg)](https://pytorch.org/)
 [![Transformers](https://img.shields.io/badge/🤗_Transformers-4.30+-yellow.svg)](https://github.com/huggingface/transformers)
 [![Wav2Vec2](https://img.shields.io/badge/Wav2Vec2-Tamil-green.svg)](https://huggingface.co/Harveenchadha/vakyansh-wav2vec2-tamil-tam-250)
-[![Whisper](https://img.shields.io/badge/OpenAI_Whisper-Small-green.svg)](https://github.com/openai/whisper)
+[![Whisper](https://img.shields.io/badge/OpenAI_Whisper-Tamil-green.svg)](https://github.com/openai/whisper)
 [![DravidianLangTech 2026](https://img.shields.io/badge/DravidianLangTech%202026-Classification%201st%20Place-gold.svg)](https://sites.google.com/view/dravidianlangtech-2026)
 [![F1 Score](https://img.shields.io/badge/F1%20Score-0.79-brightgreen.svg)](#results)
 [![Dialect Classification](https://img.shields.io/badge/Task-Dialect%20Classification-purple.svg)](#subtask-1-dialect-classification)
 [![ASR](https://img.shields.io/badge/Task-Speech%20Recognition-red.svg)](#subtask-2-automatic-speech-recognition)
 [![Tamil](https://img.shields.io/badge/Language-Tamil-orange.svg)](https://en.wikipedia.org/wiki/Tamil_language)
 
-This repository contains the implementation of our system for the **DravidianLangTech@ACL 2026** shared task on dialect-based speech recognition and classification in Tamil. Our approach achieved **1st place** in Subtask 1 (Dialect Classification) with a macro F1 score of **0.79**, and ranked 8th in Subtask 2 (ASR) with a WER of **0.90**.
+<p align="center">
+  <img src="assets/architecture.png" alt="System Architecture" width="100%"/>
+</p>
+<p align="center"><i>Overview of the proposed dialect-aware Tamil speech processing architecture. Raw audio is preprocessed through channel selection, DC offset removal, LUFS normalization, and neural denoising. A Wav2Vec2-based dialect classifier extracts utterance-level dialect embeddings using temporal pooling strategies and an MLP head. These embeddings are transferred across pipelines to condition the Whisper-Tamil ASR model through residual or cross-attention injection, enabling dialect-aware transcription.</i></p>
+
+---
+
+This repository contains the implementation of the **Wise** system for the shared task on dialect-based speech processing in Tamil at **DravidianLangTech@ACL 2026**, addressing two subtasks: **(1)** four-way dialect region classification (Northern, Southern, Western, Central), and **(2)** dialectal Tamil ASR. All audio is preprocessed using loudness normalization followed by neural denoising to ensure consistent audio quality. For classification, we experiment with different model variants combining multilingual and Tamil-pretrained **Wav2Vec2** backbones with five temporal pooling strategies under frozen and partial fine-tuning settings. Our best configuration — learned attentive pooling with partial fine-tuning and a differentially-trained MLP head — achieves a macro F1 of **0.79**, securing **1st place** (0.26-point margin). For ASR, we propose two novel **dialect-conditioned Whisper** architectures (residual injection and cross-attention) that inject dialect embeddings from the trained classifier into the ASR pipeline. The best model achieved a WER of **0.90**, securing **8th place**.
+
+**Keywords:** Dialect Embeddings, Temporal Pooling, Frozen Backbone, Residual & Cross Attention Injection, Wav2Vec2, Whisper
 
 ## 📋 Overview
 
-We address two subtasks for dialectal Tamil speech:
-- **Subtask 1 — Dialect Classification**: Classifying speech into four Tamil dialect regions (Northern, Southern, Western, Central) using a Tamil Wav2Vec2 backbone with learned attentive pooling
-- **Subtask 2 — Automatic Speech Recognition**: Transcribing dialectal Tamil speech using Whisper models with novel dialect conditioning strategies
+Tamil is one of the oldest classical languages in the world, spoken by millions across South India, Sri Lanka, and Singapore. Its wide geographic spread has produced rich regional dialects that differ in pronunciation, rhythm, and vocabulary, making it challenging for automatic speech recognition and dialect identification systems to perform well.
 
-Our system features a **tight integration** between both subtasks — dialect embeddings extracted from the trained classifier are injected into the Whisper ASR encoder for dialect-aware transcription.
+Our system makes three key contributions:
+1. A **preprocessing pipeline** combining LUFS normalization and neural denoising
+2. A **study of 12 dialect classification variants** showing learned attentive pooling performs best
+3. Two **dialect-conditioned Whisper architectures** that inject dialect embeddings into the ASR encoder
+
+The system features a **tight integration** between both subtasks — dialect embeddings extracted from the trained classifier are injected into the Whisper ASR encoder for dialect-aware transcription.
 
 ## ✨ Key Features
 
-- **Systematic Model Exploration**: 12 classification model variants combining 6 pooling strategies × 2 fine-tuning configurations
+- **Systematic Model Exploration**: 12 classification model variants combining 5 pooling strategies × 2 fine-tuning configurations × 2 backbones
 - **Learned Attentive Pooling**: Non-linear attention mechanism that discovers dialect-discriminative temporal frames
 - **Dialect-Conditioned ASR**: Novel architectures injecting dialect embeddings via encoder residual injection and decoder cross-attention
 - **Robust Preprocessing**: Two-stage pipeline with LUFS loudness normalization and Facebook Denoiser DNS64
-- **Differential Learning Rates**: Separate learning rates for pretrained backbone and randomly initialized layers
-- **Comprehensive Evaluation**: Macro F1 for classification, WER for ASR, tracked with `torchmetrics`
+- **Differential Learning Rates**: Separate learning rates for pretrained backbone (1e-5) and randomly initialized layers (1e-4)
+- **Cross-Pipeline Embedding Transfer**: Dialect embeddings from the classifier's attentive pooling layer are pre-computed and injected into Whisper
 
-## 🚀 Installation
+## 🗂️ Dataset
 
-```bash
-# Clone the repository
-git clone https://github.com/PLACEHOLDER/DialectSpeechProcessing.git
-cd DialectSpeechProcessing
+The dataset comprises spontaneous and read speech from native speakers across four regional dialect groups. All recordings are sampled at 16 kHz and captured in natural acoustic environments. The training partition contains 9.22 hours of transcribed speech.
 
-# Install requirements
-pip install -r requirements.txt
+| Dialect | Samples | Duration |
+|---------|---------|----------|
+| Southern | 1,427 | 2h 44m |
+| Northern | 1,696 | 3h 29m |
+| Western | 1,126 | 1h 59m |
+| Central | 885 | 1h 08m |
+| **Total** | **5,134** | **9h 22m** |
+
+## 🏗️ Methodology
+
+### Audio Preprocessing
+
+The raw audio recordings exhibit considerable variation in recording conditions — including ambient noise, varying volume levels, multi-channel recordings, and DC bias. We design a two-stage preprocessing pipeline:
+
+**Stage 1 — Audio Standardization:**
+1. **Channel Selection**: For multi-channel recordings, the channel with the highest SNR is retained
+2. **DC Offset Removal**: The mean of the waveform is subtracted to eliminate residual DC bias
+3. **LUFS Normalization**: Loudness is normalized to −23 LUFS using the ITU-R BS.1770 standard, ensuring consistent perceptual loudness across utterances
+
+**Stage 2 — Neural Denoising:**
+Facebook's Denoiser DNS64 model — a causal U-Net encoder-decoder architecture operating directly in the time domain, preserving phase information for speech enhancement.
+
+### Subtask 1: Dialect Classification
+
+We conduct a systematic ablation study of 12 model variants. All variants share a common three-component architecture:
+
 ```
+Raw Audio → [Wav2Vec2 Backbone] → Frame-level features (T × 768)
+         → [Temporal Pooling]   → Utterance embedding (768)
+         → [MLP Classifier: 768→512→256→4] → Dialect prediction
+```
+
+#### Speech Backbone
+
+We experiment with two backbones:
+- **Multilingual**: `facebook/wav2vec2-large-xlsr-53`
+- **Tamil Fine-tuned**: `Harveenchadha/vakyansh-wav2vec2-tamil-tam-250`
+
+And two fine-tuning strategies:
+- **Frozen**: Entire backbone frozen; only pooling and classification layers are trained
+- **Partial Fine-tuning**: Top 4 (of 12) transformer layers unfrozen and trained jointly, preventing catastrophic forgetting while allowing dialect-specific adaptation
+
+#### Temporal Pooling Strategies
+
+| Strategy | Description |
+|----------|-------------|
+| **Mean Pooling** | Masked average over all valid frames |
+| **Attentive Pooling** | Learnable linear projection computes scalar attention weights, followed by softmax-weighted aggregation |
+| **Learned Attentive Pooling** | Enhanced non-linear attention with a two-layer bottleneck network (768→192→1) |
+| **Mean + Attentive** | Concatenation of mean-pooled and attentive-pooled vectors |
+| **Learned Mean + Attentive** | Concatenation of mean-pooled and learned-attentive-pooled vectors |
+
+#### Classification Head
+
+The pooled utterance embedding passes through a three-layer MLP with progressively decreasing hidden dimensions, dropout of 0.3 after each ReLU activation.
+
+### Subtask 2: Automatic Speech Recognition
+
+We explore both dialect-conditioned and baseline approaches using **Whisper-Tamil** models (`vasista22/whisper-tamil-small` and `vasista22/whisper-tamil-medium`).
+
+#### Dialect Embedding Extraction
+
+For each audio sample, a forward pass through the best dialect classifier extracts the output of the learned attentive pooling layer (before the MLP head). These 768-dim embeddings capture dialect-discriminative phonetic, prosodic, and speaking rate characteristics.
+
+#### Variant 1: Residual Injection
+
+The dialect embedding is projected to Whisper encoder's hidden dimension via a linear layer + layer normalization, then injected into the encoder's residual stream at **every** transformer layer. This creates a persistent dialect bias throughout encoding, analogous to conditional embeddings in diffusion models.
+
+#### Variant 2: Cross-Attention Injection
+
+The dialect embedding is projected into a single context token and concatenated to the front of the encoder output. The decoder's cross-attention attends to this augmented sequence, conditioning transcription on dialect identity. A staged training schedule is used: projection warmup (frozen Whisper) → decoder fine-tuning.
+
+#### Variant 3: Vanilla Whisper Baseline
+
+Standard fine-tuning without dialect conditioning, serving as a controlled baseline.
+
+## 📊 Results
+
+### Subtask 1: Dialect Classification
+
+Our best-performing variant used learned attentive pooling with partial fine-tuning of the top four Wav2Vec2 transformer layers, achieving **1st place** with a margin of 0.26 F1 over the next team:
+
+| Rank | Team | Macro F1 |
+|------|------|----------|
+| **1** | **Wise** | **0.79** |
+| 2 | Wave2Word | 0.53 |
+| 3 | IIITK_SpeechScape | 0.48 |
+
+Learned attentive pooling was particularly effective as it captures temporally localized dialect cues such as formant transitions and intonation rather than averaging representations across all frames.
+
+### Subtask 2: Automatic Speech Recognition
+
+| Rank | Team | WER |
+|------|------|-----|
+| 1 | CHMOD_777 | 0.51 |
+| 2 | CUET_InferX | 0.54 |
+| 3 | Wave2Word | 0.55 |
+| **8** | **Wise** | **0.90** |
+
+> **Note:** The dialect-conditioned Whisper models were only partially trained due to time and computational constraints. We expect that fully training them — particularly the cross-attention variant — would further reduce WER.
 
 ## 📁 Project Structure
 
 ```
-DialectSpeechProcessing/
+DialectBasedSpeechProcessing/
 │
 ├── 1 Dataset/                                  # Raw & intermediate processed audio
 │
@@ -105,6 +211,9 @@ DialectSpeechProcessing/
 │   ├── 📄 Wise_Recognition_Run1-2.txt
 │   └── 📄 submission_data.txt
 │
+├── assets/
+│   └── architecture.png                        # System architecture diagram
+│
 ├── .gitignore
 ├── requirements.txt
 └── 📖 README.md
@@ -126,7 +235,7 @@ variant_folder/
 
 ### Dialect Classification — Variant Descriptions
 
-All 12 variants use the Tamil Wav2Vec2 backbone (`Harveenchadha/vakyansh-wav2vec2-tamil-tam-250`) which produces 768-dimensional frame-level representations. Each variant differs in **(a) backbone fine-tuning** — frozen (``original'') vs. unfreezing the top 4 transformer layers (``finetuned'') — and **(b) temporal pooling** — how the variable-length frame sequence is aggregated into a fixed utterance embedding for classification via a 3-layer MLP.
+All 12 variants use the Tamil Wav2Vec2 backbone (`Harveenchadha/vakyansh-wav2vec2-tamil-tam-250`) which produces 768-dimensional frame-level representations. Each variant differs in **(a) backbone fine-tuning** — frozen ("original") vs. unfreezing the top 4 transformer layers ("finetuned") — and **(b) temporal pooling** — how the variable-length frame sequence is aggregated into a fixed utterance embedding for classification via a 3-layer MLP.
 
 | # | Variant | Fine-tuning | Pooling | Description |
 |---|---------|-------------|---------|-------------|
@@ -159,6 +268,16 @@ For ASR, dialect embeddings (768-dim) are first extracted from the best classifi
 
 > **Note:** The dialect-conditioned variants (#1–4) were not fully trained due to time constraints. The final submission used the vanilla Whisper-Tamil-Small model (#6) with greedy decoding, repetition penalty of 1.5, and n-gram repeat prevention.
 
+## ⚙️ Experimental Setup
+
+Experiments were conducted on an NVIDIA RTX 4080 Laptop GPU locally and on cloud instances equipped with NVIDIA RTX A5000 GPUs for computationally intensive workloads. A fixed random seed of 17 was used for reproducibility.
+
+- **Optimizer**: AdamW for all models
+- **Dialect Classification LR**: 1e-5 (encoder), 1e-4 (pooling + MLP)
+- **ASR LR**: 1e-5 with weight decay 1e-2
+- **Scheduler**: ReduceLROnPlateau (factor=0.5, patience=5)
+- **Evaluation**: Macro F1 (classification), WER (ASR) via `torchmetrics`
+
 ## 🔧 Usage
 
 ### 1. Data Preprocessing
@@ -187,9 +306,7 @@ Training configuration:
 - Pooling: Learned Attentive Pooling (768→192→1 bottleneck with tanh)
 - Unfrozen Layers: Top 4 transformer layers
 - Optimizer: AdamW (encoder lr=1e-5, classifier lr=1e-4)
-- Scheduler: ReduceLROnPlateau (factor=0.5, patience=2)
-- Batch Size: 4
-- Epochs: 20
+- Scheduler: ReduceLROnPlateau (factor=0.5, patience=5)
 
 ### 3. Automatic Speech Recognition (Subtask 2)
 
@@ -208,87 +325,30 @@ python "6 Automatic Speech Recognition/2_dialect_conditioned_residual_small/trai
 python "6 Automatic Speech Recognition/5_vanilla_whisper_small/training_whisper.py"
 ```
 
-Training configuration:
-- Model: `vasista22/whisper-tamil-small`
-- Optimizer: AdamW (lr=1e-5, weight_decay=1e-2)
-- Scheduler: ReduceLROnPlateau
-- Batch Size: 2
-- Decoding: Greedy with repetition penalty (1.5) and n-gram blocking (size=3)
-
-## 🏗️ Methodology
-
-### Dialect Classification Architecture
-
-```
-Raw Audio → [Wav2Vec2 Tamil Backbone] → Frame-level features (T × 768)
-         → [Learned Attentive Pooling] → Utterance embedding (768)
-         → [MLP Classifier: 768→512→256→4] → Dialect prediction
-```
-
-**Learned Attentive Pooling** uses a two-layer bottleneck network (768 → 192 → 1) with tanh nonlinearity to learn non-linear importance scores over temporal frames, automatically discovering which frames carry dialect-discriminative information.
-
-### Dialect-Conditioned ASR Architectures
-
-**Residual Injection**: Projects dialect embedding (768-dim) and adds it to the Whisper encoder's hidden states at every transformer layer.
-
-**Cross-Attention**: Projects dialect embedding into a single context token, concatenates it to the encoder output, and lets the decoder attend to it alongside acoustic features.
-
-## 📊 Results
-
-### Subtask 1: Dialect Classification
-
-Our system achieved **1st place** with a significant margin of 0.26 F1 points over the 2nd place team:
-
-| Rank | Team Name | Macro F1 |
-|------|-----------|----------|
-| **1** | **Wise** | **0.79** |
-| 2 | Wave2Word | 0.53 |
-| 3 | IIITK_SpeechScape | 0.48 |
-| 4 | GigitAI | 0.45 |
-| 5 | CHMOD_777 | 0.43 |
-
-### Subtask 2: Automatic Speech Recognition
-
-| Rank | Team Name | WER |
-|------|-----------|-----|
-| 1 | CHMOD_777 | 0.51 |
-| 2 | CUET_InferX | 0.54 |
-| 3 | Wave2Word | 0.55 |
-| 4 | DLRG | 0.55 |
-| 5 | IIITK_SpeechScape | 0.57 |
-| **8** | **Wise** | **0.90** |
-
-## 🗂️ Dataset
-
-The Tamil Dialect Speech Dataset consists of spontaneous and read speech from native speakers across four dialect groups, recorded at 16 kHz:
-
-| Dialect | Samples | Duration |
-|---------|---------|----------|
-| Southern | 1,427 | 2:44:30 |
-| Northern | 1,696 | 3:29:15 |
-| Western | 1,126 | 1:59:59 |
-| Central | 885 | 1:08:18 |
-| **Total** | **5,134** | **9:22:02** |
-
-Test set: 2.05 hours of unlabeled audio.
-
 ## 🏆 Key Contributions
 
-1. **Systematic Pooling Ablation**: Exhaustive comparison of 12 model variants across 6 pooling strategies and 2 fine-tuning configurations, identifying learned attentive pooling as optimal for dialect identification
-2. **Dialect Embedding Transfer**: Novel pipeline connecting dialect classification to ASR through pre-extracted dialect embeddings
-3. **Two Conditioning Strategies**: Residual injection (encoder-side) and cross-attention (decoder-side) approaches for dialect-aware ASR
-4. **Robust Preprocessing**: LUFS normalization + neural denoising pipeline tailored for field recordings
+1. **Systematic Pooling Ablation**: Exhaustive comparison of 12 model variants across 5 pooling strategies and 2 fine-tuning configurations, identifying learned attentive pooling as optimal for dialect identification
+2. **Cross-Pipeline Dialect Embedding Transfer**: Novel pipeline connecting dialect classification to ASR through pre-extracted dialect embeddings from the classifier's attentive pooling layer
+3. **Two Novel Conditioning Strategies**: Residual injection (encoder-side, every layer) and cross-attention (decoder-side, context token) approaches for dialect-aware ASR
+4. **Robust Preprocessing**: LUFS normalization + neural denoising pipeline tailored for field recordings with varying conditions
 5. **State-of-the-Art Performance**: 1st place in dialect classification with 0.26 F1 margin over 2nd place
+
+## ⚠️ Limitations
+
+1. The training dataset is relatively small (9.22 hours of speech), limiting the ability of large speech models to fully adapt to dialectal variations
+2. The dataset is class-imbalanced (Central: 885 vs. Northern: 1,696 samples), which may reduce recall for underrepresented dialect groups
+3. Some transcriptions in the dataset contain minor inaccuracies or partially incorrect words, introducing noise during ASR training and evaluation
 
 ## 👥 Authors
 
-1. **Ganesh Sundhar S**
-2. **Hari Krishnan N**
-3. **Gnanasabesan G**
-4. **Suriya KP**
+- **Ganesh Sundhar S**
+- **Hari Krishnan N**
+- **Gnanasabesan G**
+- **Suriya KP**
+- **Jyothish Lal G** *(Supervisor)*
 
 **Affiliation**: Amrita School of Artificial Intelligence, Coimbatore, Amrita Vishwa Vidyapeetham, India
 
 ## 🙏 Acknowledgments
 
-We thank the organizers of the DravidianLangTech@ACL 2026 shared task for providing the dataset and evaluation framework.
+We thank the organizers of the DravidianLangTech@ACL 2026 shared task for curating the Tamil dialect speech corpus and providing the evaluation infrastructure.
